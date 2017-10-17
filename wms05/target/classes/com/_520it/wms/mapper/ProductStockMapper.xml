@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.ProductStockMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.ProductStock" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="price" property="price" jdbcType="DECIMAL" />
+    <result column="storeNumber" property="storeNumber" jdbcType="DECIMAL" />
+    <result column="amount" property="amount" jdbcType="DECIMAL" />
+    <association property="product" javaType="Product">
+      <id column="productId" property="id"/>
+      <result column="productName" property="name"/>
+      <association property="brand" javaType="Brand">
+        <id column="brandId" property="id"/>
+        <result column="brandName" property="name"/>
+      </association>
+    </association>
+    <association property="depot" javaType="Depot">
+      <id column="depotId" property="id"/>
+      <result column="depotName" property="name"/>
+    </association>
+  </resultMap>
+  <sql id="base_selected">
+    ps.*,
+    p.id productId,
+    p.name productName,
+    d.id depotId,
+    d.name depotName,
+    b.id brandId,
+    b.name brandName
+  </sql>
+  <sql id="base_from">
+    productstock ps
+    left join product p on ps.product_id = p.id
+    left join brand b on p.brand_id = b.id
+    left join depot d on ps.depot_id = d.id
+  </sql>
+  <sql id="base_where">
+    <where>
+      <if test="keyword !=null and keyword != ''">
+        and (p.sn like concat('%',#{keyword},'%') or p.name like concat('%',#{keyword},'%'))
+      </if>
+      <if test="depotId >0">
+        and d.id =#{depotId}
+      </if>
+      <if test="brandId >0">
+        and b.id =#{brandId}
+      </if>
+      <if test="limitNum !=null">
+        and ps.storeNumber &lt; #{limitNum}
+      </if>
+    </where>
+  </sql>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from productstock
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com._520it.wms.domain.ProductStock" useGeneratedKeys="true" keyProperty="id" >
+    insert into productstock (price, storeNumber, amount,depot_id,product_id)
+    values (#{price,jdbcType=DECIMAL}, #{storeNumber,jdbcType=DECIMAL}, #{amount,jdbcType=DECIMAL},
+    #{depot.id},#{product.id})
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com._520it.wms.domain.ProductStock" >
+    update productstock
+    set price = #{price,jdbcType=DECIMAL},
+      storeNumber = #{storeNumber,jdbcType=DECIMAL},
+      amount = #{amount,jdbcType=DECIMAL}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+    where ps.id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+  </select>
+  <select id="getItemByDepotIdAndProductId" resultMap="BaseResultMap">
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+    where d.id = #{depotId} and p.id = #{productId}
+  </select>
+  <select id="query4count" resultType="java.lang.Integer">
+    select count(*) from <include refid="base_from"/>
+    <include refid="base_where"/>
+  </select>
+  <select id="query4list" resultMap="BaseResultMap">
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+    <include refid="base_where"/>
+    limit #{beginIndex} ,#{pageSize}
+  </select>
+</mapper>

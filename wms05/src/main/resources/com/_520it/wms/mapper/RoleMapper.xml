@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.RoleMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.Role" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="sn" property="sn" jdbcType="VARCHAR" />
+    <collection property="permissions" ofType="Permission"
+                select="com._520it.wms.mapper.PermissionMapper.selectById" column="id"/>
+    <collection property="menus" ofType="SystemMenu"
+                select="com._520it.wms.mapper.SystemMenuMapper.selectById" column="id"/>
+  </resultMap>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from role
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deletePermissionRelation">
+    delete from role_permission where role_id = #{id}
+  </delete>
+  <delete id="deleteMenuRelation">
+    delete from role_menu where role_id = #{id}
+  </delete>
+  <insert id="insert" parameterType="com._520it.wms.domain.Role" useGeneratedKeys="true" keyProperty="id" >
+    insert into role (name, sn)
+    values (#{name,jdbcType=VARCHAR}, #{sn,jdbcType=VARCHAR})
+  </insert>
+  <insert id="addPermissionRelation">
+    insert into role_permission (role_id,permission_id)VALUES (#{role_id},#{permission_id})
+  </insert>
+  <insert id="addMenuRelation">
+    insert into role_menu (role_id ,menu_id )VALUES (#{role_id},#{menu_id})
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com._520it.wms.domain.Role" >
+    update role
+    set name = #{name,jdbcType=VARCHAR},
+      sn = #{sn,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select id, name, sn
+    from role
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select id, name, sn
+    from role
+  </select>
+  <select id="query4count" resultType="java.lang.Integer">
+    select count(*) from role
+  </select>
+  <select id="query4list" resultMap="BaseResultMap">
+    select * from role
+    limit #{beginIndex} ,#{pageSize}
+  </select>
+  <select id="selectById" resultMap="BaseResultMap">
+    select * from role where id in(
+    select role_id from employee_role where employee_id = #{employee_id}
+    )
+  </select>
+</mapper>

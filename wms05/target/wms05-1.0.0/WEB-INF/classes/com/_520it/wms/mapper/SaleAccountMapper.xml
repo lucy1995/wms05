@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.SaleAccountMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.SaleAccount" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="vdate" property="vdate" jdbcType="TIMESTAMP" />
+    <result column="number" property="number" jdbcType="DECIMAL" />
+    <result column="costPrice" property="costPrice" jdbcType="DECIMAL" />
+    <result column="costAmount" property="costAmount" jdbcType="DECIMAL" />
+    <result column="salePrice" property="salePrice" jdbcType="DECIMAL" />
+    <result column="saleAmount" property="saleAmount" jdbcType="DECIMAL" />
+    <association property="product" javaType="Product">
+      <id column="productId" property="id"/>
+      <result column="productName" property="name"/>
+    </association>
+    <association property="saleman" javaType="Employee">
+      <id column="salemanId" property="id"/>
+      <result column="salemanName" property="name"/>
+    </association>
+    <association property="client" javaType="Client">
+      <id column="clientId" property="id"/>
+      <result column="clientName" property="name"/>
+    </association>
+  </resultMap>
+  <sql id="base_selected">
+    sc.*,
+    p.id productId,
+    p.name productName,
+    e.id salemanId,
+    e.name salemanName,
+    c.id clientId,
+    c.name clientName
+  </sql>
+  <sql id="base_from">
+    saleaccount sc
+    left join employee e on sc.saleman_id = e.id
+    left join product p on sc.product_id = p.id
+    left join client c on sc.client_id = c.id
+  </sql>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from saleaccount
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com._520it.wms.domain.SaleAccount" useGeneratedKeys="true" keyProperty="id" >
+    insert into saleaccount (vdate, number, costPrice, 
+      costAmount, salePrice, saleAmount, 
+      product_id, saleman_id, client_id
+      )
+    values (#{vdate,jdbcType=TIMESTAMP}, #{number,jdbcType=DECIMAL}, #{costPrice,jdbcType=DECIMAL},
+      #{costAmount,jdbcType=DECIMAL}, #{salePrice,jdbcType=DECIMAL}, #{saleAmount,jdbcType=DECIMAL},
+      #{product.id,jdbcType=BIGINT}, #{saleman.id,jdbcType=BIGINT}, #{client.id,jdbcType=BIGINT}
+      )
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com._520it.wms.domain.SaleAccount" >
+    update saleaccount
+    set vdate = #{vdate,jdbcType=TIMESTAMP},
+      number = #{number,jdbcType=DECIMAL},
+      costPrice = #{costPrice,jdbcType=DECIMAL},
+      costAmount = #{costAmount,jdbcType=DECIMAL},
+      salePrice = #{salePrice,jdbcType=DECIMAL},
+      saleAmount = #{saleAmount,jdbcType=DECIMAL},
+      product_id = #{product.id,jdbcType=BIGINT},
+      saleman_id = #{saleman.id,jdbcType=BIGINT},
+      client_id = #{client.id,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select <include refid="base_from"/>
+    from <include refid="base_from"/>
+    where sc.id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select <include refid="base_from"/>
+    from <include refid="base_from"/>
+  </select>
+</mapper>

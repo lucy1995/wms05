@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.SystemMenuMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.SystemMenu" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="url" property="url" jdbcType="VARCHAR" />
+    <result column="sn" property="sn" jdbcType="VARCHAR" />
+    <association property="parent" javaType="SystemMenu" >
+      <id column="parentId" property="id"/>
+      <result column="parentName" property="name"/>
+    </association>
+  </resultMap>
+  <sql id="base_selected">
+    child.*,
+    parent.id parentId,
+    parent.name parentName
+  </sql>
+  <sql id="base_from">
+    systemmenu child left join systemmenu parent on child.parent_id = parent.id
+  </sql>
+  <sql id="base_where">
+    <where>
+      <choose>
+        <when test="parentId >0">
+          and parent.id = #{parentId}
+        </when>
+        <otherwise>
+          and child.parent_id is null
+        </otherwise>
+      </choose>
+    </where>
+  </sql>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from systemmenu
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="com._520it.wms.domain.SystemMenu" useGeneratedKeys="true" keyProperty="id" >
+    insert into systemmenu (name, url, sn, 
+      parent_id)
+    values (#{name,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, #{sn,jdbcType=VARCHAR}, 
+      #{parent.id,jdbcType=BIGINT})
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com._520it.wms.domain.SystemMenu" >
+    update systemmenu
+    set name = #{name,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      sn = #{sn,jdbcType=VARCHAR},
+      parent_id = #{parent.id,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+    where child.id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+  </select>
+  <select id="query4count" resultType="java.lang.Integer">
+    select count(*) from <include refid="base_from"/>
+    <include refid="base_where"/>
+  </select>
+  <select id="query4list" resultMap="BaseResultMap">
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+    <include refid="base_where"/>
+    limit #{beginIndex} ,#{pageSize}
+  </select>
+  <select id="queryMenuBySn" resultType="java.util.Map">
+    select id ,name,url action,parent_id pId
+    from systemmenu where parent_id = (
+      select  id from systemMenu where sn = #{parentSn}
+    )
+  </select>
+  <select id="queryMenuBySnAndEmpId" resultType="java.util.Map">
+    select id ,name,url action,parent_id pId
+    from systemmenu where parent_id = (
+      select  id from systemMenu where sn = #{parentSn}
+    )
+    and id in(
+        select menu_id from role_menu where role_id in(
+            select role_id from employee_role where employee_id = #{empId}
+        )
+    )
+  </select>
+  <select id="selectById" resultMap="BaseResultMap">
+    select * from systemmenu where id in(
+    select menu_id from role_menu where role_id = #{role_id}
+    )
+  </select>
+</mapper>

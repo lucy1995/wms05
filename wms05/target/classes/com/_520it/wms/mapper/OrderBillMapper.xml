@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com._520it.wms.mapper.OrderBillMapper" >
+  <resultMap id="BaseResultMap" type="com._520it.wms.domain.OrderBill" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="sn" property="sn" jdbcType="VARCHAR" />
+    <result column="vdate" property="vdate" jdbcType="TIMESTAMP" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="totalAmount" property="totalAmount" jdbcType="DECIMAL" />
+    <result column="totalNumber" property="totalNumber" jdbcType="DECIMAL" />
+    <result column="auditTime" property="auditTime" jdbcType="TIMESTAMP" />
+    <result column="inputTime" property="inputTime" jdbcType="TIMESTAMP" />
+    <association property="inputUser" javaType="Employee">
+      <id column="inputUserId" property="id"/>
+      <result column="inputUserName" property="name"/>
+    </association>
+    <association property="auditor" javaType="Employee">
+      <id column="auditorId" property="id"/>
+      <result column="auditorName" property="name"/>
+    </association>
+    <association property="supplier" javaType="Supplier">
+      <id column="supplierId" property="id"/>
+      <result column="supplierName" property="name"/>
+    </association>
+    <collection property="items" ofType="OrderBillItem"
+                select="selectItemByBillId" column="id"/>
+  </resultMap>
+  <sql id="base_selected">
+    bill.*,
+    inputUser.id inputUserId,
+    inputUser.name inputUserName,
+    auditor.id auditorId,
+    auditor.name auditorName,
+    supplier.id supplierId,
+    supplier.name supplierName
+  </sql>
+  <sql id="base_from">
+    orderBill bill
+    left join employee inputUser on bill.inputUser_id = inputUser.id
+    LEFT join employee auditor on bill.auditor_id = auditor.id
+    LEFT join supplier on bill.supplier_id = supplier.id
+  </sql>
+  <sql id="base_where">
+    <where>
+      <if test="beginDate!=null">
+        and bill.vdate &gt; #{beginDate}
+      </if>
+      <if test="endDate!=null">
+        and bill.vdate &lt; #{endDate}
+      </if>
+      <if test="supplier_id >0">
+        and supplier.id = #{supplier_id}
+      </if>
+      <if test="status >=0">
+        and bill.status = #{status}
+      </if>
+    </where>
+  </sql>
+  <resultMap id="baseItemResultMap" type="OrderBillItem">
+    <id column="id" property="id"/>
+    <result column="costPrice" property="costPrice"/>
+    <result column="number" property="number"/>
+    <result column="amount" property="amount"/>
+    <result column="remark" property="remark"/>
+    <association property="product" javaType="Product">
+      <id column="productId" property="id"/>
+      <result column="productName" property="name"/>
+      <association property="brand" javaType="Brand">
+        <id column="brandId" property="id"/>
+        <id column="brandName" property="name"/>
+      </association>
+    </association>
+  </resultMap>
+  <sql id="base_item_selected">
+    item.*,
+    p.id productId,
+    p.name productName,
+    b.id brandId,
+    b.name brandName
+  </sql>
+  <sql id="base_item_from">
+    orderbillitem item
+    left join product p on item.product_id = p.id
+    left join brand b on p.brand_id = b.id
+  </sql>
+  <select id="selectItemByBillId" resultMap="baseItemResultMap">
+    select <include refid="base_item_selected"/>
+    FROM <include refid="base_item_from"/>
+    where bill_id = #{bill_id}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from orderbill
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteItemByBillId">
+    delete from orderbillitem where bill_id = #{id}
+  </delete>
+  <insert id="insert" parameterType="com._520it.wms.domain.OrderBill" useGeneratedKeys="true" keyProperty="id" >
+    insert into orderbill (sn, vdate, status, 
+      totalAmount, totalNumber, auditTime, 
+      inputTime, inputUser_id, auditor_id, 
+      supplier_id)
+    values (#{sn,jdbcType=VARCHAR}, #{vdate,jdbcType=TIMESTAMP}, #{status,jdbcType=INTEGER}, 
+      #{totalAmount,jdbcType=DECIMAL}, #{totalNumber,jdbcType=DECIMAL}, #{auditTime,jdbcType=TIMESTAMP},
+      #{inputTime,jdbcType=TIMESTAMP}, #{inputUser.id,jdbcType=BIGINT}, #{auditor.id,jdbcType=BIGINT},
+      #{supplier.id,jdbcType=BIGINT})
+  </insert>
+  <insert id="insertItem">
+    insert into orderbillitem (number,amount,costPrice,remark,product_id,bill_id)
+    VALUES (#{number},#{amount},#{costPrice},#{remark},#{product.id},#{bill.id})
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com._520it.wms.domain.OrderBill" >
+    update orderbill
+    set sn = #{sn,jdbcType=VARCHAR},
+      vdate = #{vdate,jdbcType=TIMESTAMP},
+      totalAmount = #{totalAmount,jdbcType=DECIMAL},
+      totalNumber = #{totalNumber,jdbcType=DECIMAL},
+      supplier_id = #{supplier.id,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="audit">
+    update orderbill
+    set status = #{status,jdbcType=INTEGER},
+      auditTime = #{auditTime,jdbcType=TIMESTAMP},
+      auditor_id = #{auditor.id,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select <include refid="base_selected"/>
+    from <include refid="base_from"/>
+    where bill.id = #{id,jdbcType=BIGINT}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select <include refid="base_selected"/>
+    from <include refid="base_from"/>
+  </select>
+  <select id="query4count" resultType="java.lang.Integer">
+    select count(*) from <include refid="base_from"/>
+    <include refid="base_where"/>
+  </select>
+  <select id="query4list" resultMap="BaseResultMap">
+    select <include refid="base_selected"/>
+    FROM <include refid="base_from"/>
+    <include refid="base_where"/>
+    limit #{beginIndex} ,#{pageSize}
+  </select>
+</mapper>
